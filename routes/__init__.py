@@ -34,7 +34,7 @@ def add_session_headers(user=None, expired_month=0):
     s.save()
     expired_time = gmt_time(expired_month)
     headers = {
-        'Set-Cookie': 'sid={}; Expires={}'.format(session_id, expired_time),
+        'Set-Cookie': 'sid={}; Expires={}; path=/'.format(session_id, expired_time),
     }
     return headers
 
@@ -44,6 +44,7 @@ def current_user(request):
     根据 session_id 找到当前请求对应的 user 实例
     """
     session_id = request.cookies.get('sid', '')
+    log(request.cookies)
     log('sssssss',session_id)
     sessions = Session.all()
     log('sesese', sessions)

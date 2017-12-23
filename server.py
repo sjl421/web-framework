@@ -3,8 +3,11 @@ import _thread
 from request import Request
 from utils import log
 from routes import error
-from routes.routes_user import route_dict as user_routes
-from routes.routes_static import route_dict as static_routes
+# from routes.routes_user import route_dict as user_routes
+# from routes.routes_static import route_dict as static_routes
+from routes import routes_user
+from routes import routes_static
+from routes import routes_index
 
 
 def response_for_path(request):
@@ -12,11 +15,38 @@ def response_for_path(request):
     根据 path 调用相应的处理函数
     没有处理的 path 会返回 404
     """
-    r = {}
-    # 注册外部的路由
-    r.update(user_routes())
-    r.update(static_routes())
-    response = r.get(request.path, error)
+    route_dict = {}
+    modules = [routes_index, routes_user, routes_static]
+
+    for m in modules:
+        # 获取路由函数
+        names = dir(m)
+        route_prefix = m.__name__.split('_')[-1]
+        function_names = [
+            name for name in names if name.startswith(route_prefix)
+        ]
+
+        log('function names', function_names)
+
+        # 为路由函数设置 url，将 url 与对应路由函数更新到 route_dice 中
+        if route_prefix == 'index':
+            # 如果 py 名末是 index，url 前缀不加函数名
+            # 比如 routes_index.py 里的路由函数对应的 url 是 /
+            # routes_user.py 里的路由函数对应的 url 是 /user/
+            for name in function_names:
+                key = '/{}'.format(name.split('_')[-1])
+                value = getattr(m, name)
+                log('route dict key value', key, value)
+                route_dict[key] = value
+        else:
+            for name in function_names:
+                key = '/{}'.format(name.replace('_', '/'))
+                value = getattr(m, name)
+                log('route dict key value', key, value)
+                route_dict[key] = value
+
+    log('reponse for path <{}> <{}>'.format(request.path, route_dict))
+    response = route_dict.get(request.path, error)
     return response(request)
 
 
